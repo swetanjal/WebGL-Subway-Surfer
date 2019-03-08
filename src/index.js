@@ -13,7 +13,7 @@ function main() {
     alert('Unable to initialize WebGL. Your browser or machine may not support it.');
     return;
   }
-
+  /***********************SHADERS FOR NON TEXTURED OBJECTS ********************************/
   // Vertex shader program
   const vsSource = getVertexShader();
 
@@ -40,31 +40,44 @@ function main() {
       modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
     },
   };
+  /*********************************SHADERS FOR TEXTURED OBJECTS ****************/
+  const vsSourceTextured = getVertexShaderTextured();
 
+  // Fragment shader program
+
+  const fsSourceTextured = getFragmentShaderTextured();
+
+  // Initialize a shader program; this is where all the lighting
+  // for the vertices and so forth is established.
+  const shaderProgramTextured = initShaderProgram(gl, vsSourceTextured, fsSourceTextured);
+  const programInfoTextured = {
+    program: shaderProgramTextured,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgramTextured, 'aVertexPosition'),
+      textureCoord: gl.getAttribLocation(shaderProgramTextured, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgramTextured, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgramTextured, 'uModelViewMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgramTextured, 'uSampler'),
+    },
+  };
+  /******************************************************************************/
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   var buffer;
   var tracks = [];
   var player;
   var then = 0;
+  var texture;
   loadJSONResource('./Susan.json', function (modelErr, modelObj) {
-    if (modelErr) {
-      alert('Fatal error getting Susan model (see console)');
-      //console.error(fsErr);
-    } else {
-        buffer = initBuffersModel(gl, 1, 1, 1, 0, 2, -10, [1.0, 1.0, 0.0, 1.0],modelObj);
-        tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
-        player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
-        player.y_speed = 0.0;
-        requestAnimationFrame(render);
-    }
+    texture = loadTexture(gl, 'SusanTexture.png');
+    buffer = initBuffersModel(gl, 1, 1, 1, 0, 2, -10, [1.0, 1.0, 0.0, 1.0],modelObj);
+    tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
+    player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
+    player.y_speed = 0.0;
+    requestAnimationFrame(render);
   });
-  //var buffer = initBuffersModel(gl, 1, 1, 1, 0, 2, -10, [1.0, 1.0, 0.0, 1.0], 5);
-  //var tracks = [];
-  //tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
-  //var player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
-  //player.y_speed = 0.0;
-  
   // Draw the scene repeatedly
   function render(now) {
     now *= 0.001;  // convert to seconds
@@ -138,7 +151,7 @@ function main() {
       drawObject(gl, programInfo, tracks[i], deltaTime, viewProjectionMatrix);
     }
     drawObject(gl, programInfo, player, deltaTime, viewProjectionMatrix);
-    drawObject(gl, programInfo, buffer, deltaTime, viewProjectionMatrix);
+    drawObjectTextured(gl, programInfoTextured, buffer, deltaTime, viewProjectionMatrix, texture);
     requestAnimationFrame(render);
     /*****************************************************************/
   }
