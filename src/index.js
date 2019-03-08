@@ -43,15 +43,28 @@ function main() {
 
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
+  var buffer;
   var tracks = [];
-  tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
-  var player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
-  player.y_speed = 0.0;
-  //tracks.push(initBuffersCube(gl, 3, 0.2, 1000, 3.5, 0, -10));
-  //tracks.push(initBuffersCube(gl, 3, 0.2, 1000, -3.5, 0, -10));
-  //const buffers = initBuffersCube(gl, 3, 0.2, 2, 0, 0, -10);
-  //const buffers2 = initBuffersCube(gl, 3, 0.2, 2, 4, 0, -10);
+  var player;
   var then = 0;
+  loadJSONResource('./Susan.json', function (modelErr, modelObj) {
+    if (modelErr) {
+      alert('Fatal error getting Susan model (see console)');
+      //console.error(fsErr);
+    } else {
+        buffer = initBuffersModel(gl, 1, 1, 1, 0, 2, -10, [1.0, 1.0, 0.0, 1.0],modelObj);
+        tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
+        player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
+        player.y_speed = 0.0;
+        requestAnimationFrame(render);
+    }
+  });
+  //var buffer = initBuffersModel(gl, 1, 1, 1, 0, 2, -10, [1.0, 1.0, 0.0, 1.0], 5);
+  //var tracks = [];
+  //tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
+  //var player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
+  //player.y_speed = 0.0;
+  
   // Draw the scene repeatedly
   function render(now) {
     now *= 0.001;  // convert to seconds
@@ -122,11 +135,12 @@ function main() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     for(var i = 0; i < tracks.length; ++i){
-      drawSceneCube(gl, programInfo, tracks[i], deltaTime, viewProjectionMatrix);
+      drawObject(gl, programInfo, tracks[i], deltaTime, viewProjectionMatrix);
     }
-    drawSceneCube(gl, programInfo, player, deltaTime, viewProjectionMatrix);
+    drawObject(gl, programInfo, player, deltaTime, viewProjectionMatrix);
+    drawObject(gl, programInfo, buffer, deltaTime, viewProjectionMatrix);
     requestAnimationFrame(render);
     /*****************************************************************/
   }
-  requestAnimationFrame(render);
+  //requestAnimationFrame(render);
 }
