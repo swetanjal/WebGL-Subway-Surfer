@@ -67,16 +67,52 @@ function main() {
   // objects we'll be drawing.
   var buffer;
   var tracks = [];
+  var trains = [];
   var player;
   var then = 0;
-  var texture;
-  loadJSONResource('./Susan.json', function (modelErr, modelObj) {
-    texture = loadTexture(gl, 'SusanTexture.png');
-    buffer = initBuffersModel(gl, 1, 1, 1, 0, 2, -10, [1.0, 1.0, 0.0, 1.0],modelObj);
-    tracks.push(initBuffersCube(gl, 9, 0.2, 1000, 0, 0, 0, [1.0, 0.0, 0.0, 1.0]));
-    player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
-    player.y_speed = 0.0;
-    requestAnimationFrame(render);
+  var textureTrain;
+  var textureTrack;
+  loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
+    loadJSONResource('./train.json', function(modelErr2, modelTrain){
+      textureTrain = loadTexture(gl, 'train.png');
+      textureTrack = loadTexture(gl, 'tracks.png');
+      /* Generating trains */
+      trains.push(initBuffersModel(gl, 1, 1, 1, 0, 0, -10, [1.0, 1.0, 0.0, 1.0],modelTrain));
+      trains[0].rotation = 180;
+      trains[0].scale = [0.2, 0.2, 0.2];
+      /************************************************************/
+      /* Generating tracks */
+      var z = -10000;
+      var cnt = 0;
+      for(var i = 0; i < 200; ++i){
+        tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+        tracks[cnt].rotation = 90;
+        tracks[cnt].scale = [0.1, 0.1, 0.1];
+        z += 120;
+        cnt = cnt + 1;
+      }
+      z = -10000;
+      for(var i = 0; i < 200; ++i){
+        tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+        tracks[cnt].rotation = 90;
+        tracks[cnt].scale = [0.1, 0.1, 0.1];
+        z += 120;
+        cnt = cnt + 1;
+      }
+      z = -10000;
+      for(var i = 0; i < 200; ++i){
+        tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+        tracks[cnt].rotation = 90;
+        tracks[cnt].scale = [0.1, 0.1, 0.1];
+        z += 120;
+        cnt = cnt + 1;
+      }
+      /****************************************************************/
+      /**************************Creating player***********************/
+      player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
+      player.y_speed = 0.0;
+      requestAnimationFrame(render);
+    })
   });
   // Draw the scene repeatedly
   function render(now) {
@@ -116,8 +152,8 @@ function main() {
     const zNear = 0.1;
     const zFar = 100.0;
     const projectionMatrix = mat4.create();
-    var eye = [0, 5, 3];
-    var look = [0, 1, -10];
+    var eye = [0, 10, 34];
+    var look = [0, 0, 0];
     var up = [0, 1, 0];
     // note: glmatrix.js always has the first argument
     // as the destination to receive the result.
@@ -146,13 +182,17 @@ function main() {
     gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
     // Clear the canvas before we start drawing on it.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
+    // Drawing the tracks
     for(var i = 0; i < tracks.length; ++i){
-      drawObject(gl, programInfo, tracks[i], deltaTime, viewProjectionMatrix);
+      drawObjectTextured(gl, programInfoTextured, tracks[i], deltaTime, viewProjectionMatrix, textureTrack);
     }
     drawObject(gl, programInfo, player, deltaTime, viewProjectionMatrix);
-    drawObjectTextured(gl, programInfoTextured, buffer, deltaTime, viewProjectionMatrix, texture);
-    requestAnimationFrame(render);
+    
+    // Drawing the trains
+    for(var i = 0; i < trains.length; ++i)
+      drawObjectTextured(gl, programInfoTextured, trains[i], deltaTime, viewProjectionMatrix, textureTrain);
+    
+      requestAnimationFrame(render);
     /*****************************************************************/
   }
   //requestAnimationFrame(render);

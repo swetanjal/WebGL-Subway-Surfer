@@ -385,22 +385,24 @@ function drawObjectTextured(gl, programInfo, buffers, deltaTime, projectionMatri
   
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
-  const modelViewMatrix = mat4.create();
-
+  var modelViewMatrix = mat4.create();
+  modelViewMatrix[0] = buffers.scale[0];
+  modelViewMatrix[5] = buffers.scale[1];
+  modelViewMatrix[10] = buffers.scale[2];
   // Now move the drawing position a bit to where we want to
   // start drawing the square.
-
+  
   mat4.translate(modelViewMatrix,     // destination matrix
                  modelViewMatrix,     // matrix to translate
                  buffers.location);  // amount to translate
 
   //Write your code to Rotate the cube here//
-
-  /*mat4.rotate(modelViewMatrix,
-              modelViewMatrix,
-              cubeRotation,
-              [1, 0, 1]);
   mat4.rotate(modelViewMatrix,
+    modelViewMatrix,
+    buffers.rotation * 22.0 / (7 * 180),
+    [0, 1, 0]);
+  
+  /*mat4.rotate(modelViewMatrix,
     modelViewMatrix,
     cubeRotation,
     [0, 0, 1]);*/
