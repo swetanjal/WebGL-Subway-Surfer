@@ -229,6 +229,8 @@ function initBuffersModel(gl, l, b, h, x, y, z, col, model) {
     color: colorBuffer,
     indices: indexBuffer,
     textureCoord: textureCoordBuffer,
+    rotation : 0,
+    scale : [1, 1, 1],
   };
 }
 /**********************************************************************************/

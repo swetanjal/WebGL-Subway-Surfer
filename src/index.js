@@ -69,49 +69,67 @@ function main() {
   var tracks = [];
   var trains = [];
   var player;
+  var inspector;
   var then = 0;
   var textureTrain;
   var textureTrack;
+  var texturePlayer;
+  var textureInspector;
   loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
     loadJSONResource('./train.json', function(modelErr2, modelTrain){
-      textureTrain = loadTexture(gl, 'train.png');
-      textureTrack = loadTexture(gl, 'tracks.png');
-      /* Generating trains */
-      trains.push(initBuffersModel(gl, 1, 1, 1, 0, 0, -10, [1.0, 1.0, 0.0, 1.0],modelTrain));
-      trains[0].rotation = 180;
-      trains[0].scale = [0.2, 0.2, 0.2];
-      /************************************************************/
-      /* Generating tracks */
-      var z = -10000;
-      var cnt = 0;
-      for(var i = 0; i < 200; ++i){
-        tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-        tracks[cnt].rotation = 90;
-        tracks[cnt].scale = [0.1, 0.1, 0.1];
-        z += 120;
-        cnt = cnt + 1;
-      }
-      z = -10000;
-      for(var i = 0; i < 200; ++i){
-        tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-        tracks[cnt].rotation = 90;
-        tracks[cnt].scale = [0.1, 0.1, 0.1];
-        z += 120;
-        cnt = cnt + 1;
-      }
-      z = -10000;
-      for(var i = 0; i < 200; ++i){
-        tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-        tracks[cnt].rotation = 90;
-        tracks[cnt].scale = [0.1, 0.1, 0.1];
-        z += 120;
-        cnt = cnt + 1;
-      }
-      /****************************************************************/
-      /**************************Creating player***********************/
-      player = initBuffersCube(gl, 1, 1, 1, 0, 1, -10, [0.0, 0.0, 1.0, 1.0]);
-      player.y_speed = 0.0;
-      requestAnimationFrame(render);
+      loadJSONResource('./player.json', function(modelErr3, modelPlayer){
+        loadJSONResource('./inspector.json', function(modelErr4, modelInspector){
+          textureTrain = loadTexture(gl, 'train.png');
+          textureTrack = loadTexture(gl, 'tracks.png');
+          texturePlayer = loadTexture(gl, 'player.png');
+          textureInspector = loadTexture(gl, 'inspector.png');
+          /* Generating trains */
+          trains.push(initBuffersModel(gl, 1, 1, 1, 0, 2, -150, [1.0, 1.0, 0.0, 1.0],modelTrain));
+          trains[0].rotation = 180;
+          trains[0].scale = [0.25, 0.25, 0.25];
+          /************************************************************/
+          /* Generating tracks */
+          var z = -10000;
+          var cnt = 0;
+          for(var i = 0; i < 200; ++i){
+            tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+            tracks[cnt].rotation = 90;
+            tracks[cnt].scale = [0.1, 0.1, 0.1];
+            z += 120;
+            cnt = cnt + 1;
+          }
+          z = -10000;
+          for(var i = 0; i < 200; ++i){
+            tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+            tracks[cnt].rotation = 90;
+            tracks[cnt].scale = [0.1, 0.1, 0.1];
+            z += 120;
+            cnt = cnt + 1;
+          }
+          z = -10000;
+          for(var i = 0; i < 200; ++i){
+            tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+            tracks[cnt].rotation = 90;
+            tracks[cnt].scale = [0.1, 0.1, 0.1];
+            z += 120;
+            cnt = cnt + 1;
+          }
+          /****************************************************************/
+          /**************************Creating player***********************/
+          player = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 15, [0.0, 0.0, 1.0, 1.0], modelPlayer);
+          player.y_speed = 0.0;
+          player.rotation = 180.0;
+          player.scale = [0.35, 0.35, 0.35];
+          requestAnimationFrame(render);
+          /****************************************************************/
+          /***************************Creating Inspector*******************/
+          inspector = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 50, [0.0, 0.0, 1.0, 1.0], modelInspector);
+          inspector.scale = [0.4, 0.4, 0.4];
+          inspector.rotation = 180;
+          /*****************************************************************/
+        })
+        
+      })
     })
   });
   // Draw the scene repeatedly
@@ -124,23 +142,25 @@ function main() {
     function checkKey(e){
       e = e || window.event;
       if(e.keyCode == 37){
-        player.location[0] -= 2;
+        if(player.location[0] > -16.5 && player.location[1] <= 1)
+          player.location[0] -= 16.5;
       }
       else if(e.keyCode == 39){
-        player.location[0] += 2;
+        if(player.location[0] < 16.5 && player.location[1] <= 1)
+        player.location[0] += 16.5;
 
       }
       else if(e.keyCode == 32){
         if(player.y_speed == 0){
-          player.y_speed = 0.5;
+          player.y_speed = 0.7;
         }
       }
     }
     /************************************************************/
     /***********************  tick  *****************************/
     //player.location[2] -= 0.05;
-    player.location[1] += player.y_speed;
-    if(player.location[1] > 1)
+    player.location[1] = player.location[1] + player.y_speed;
+    if(player.location[1] > 1.0)
       player.y_speed -= 0.03;
     else
       player.y_speed = 0.0;
@@ -186,8 +206,8 @@ function main() {
     for(var i = 0; i < tracks.length; ++i){
       drawObjectTextured(gl, programInfoTextured, tracks[i], deltaTime, viewProjectionMatrix, textureTrack);
     }
-    drawObject(gl, programInfo, player, deltaTime, viewProjectionMatrix);
-    
+    drawObjectTextured(gl, programInfoTextured, player, deltaTime, viewProjectionMatrix, texturePlayer);
+    drawObjectTextured(gl, programInfoTextured, inspector, deltaTime, viewProjectionMatrix, textureInspector);
     // Drawing the trains
     for(var i = 0; i < trains.length; ++i)
       drawObjectTextured(gl, programInfoTextured, trains[i], deltaTime, viewProjectionMatrix, textureTrain);
