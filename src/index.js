@@ -78,6 +78,8 @@ function main() {
   var texturePlayer;
   var textureInspector;
   var textureCoin;
+  var gravity_effect = 1;
+  var score = 0;
   loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
     loadJSONResource('./train.json', function(modelErr2, modelTrain){
       loadJSONResource('./player.json', function(modelErr3, modelPlayer){
@@ -89,7 +91,10 @@ function main() {
             texturePlayer = loadTexture(gl, 'player.png');
             textureInspector = loadTexture(gl, 'inspector.png');
             /* Generating trains */
-            trains.push(initBuffersModel(gl, 1, 1, 1, 0, 2, -150, [1.0, 1.0, 0.0, 1.0],modelTrain));
+            var L1 = 0;
+            var L0 = -23;
+            var L2 = 23;
+            trains.push(initBuffersModel(gl, 1, 1, 1, L2, 2, -150, [1.0, 1.0, 0.0, 1.0],modelTrain));
             trains[0].rotation = 180;
             trains[0].scale = [0.25, 0.25, 0.25];
             /************************************************************/
@@ -142,6 +147,8 @@ function main() {
             coins[1].scale = [5, 5, 5];
             coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
             coins[2].scale = [5, 5, 5];
+            coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 0.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+            coins[3].scale = [5, 5, 5];
             /******************************************************************/
           })
         })
@@ -158,11 +165,11 @@ function main() {
     function checkKey(e){
       e = e || window.event;
       if(e.keyCode == 37){
-        if(player.location[0] > -16.5 && player.location[1] <= 1)
+        if(player.location[0] > -16.5 )
           player.location[0] -= 16.5;
       }
       else if(e.keyCode == 39){
-        if(player.location[0] < 16.5 && player.location[1] <= 1)
+        if(player.location[0] < 16.5 )
         player.location[0] += 16.5;
 
       }
@@ -173,34 +180,65 @@ function main() {
       }
       else if(e.keyCode == 38){
         // Up
-        player.location[2] -= 0.1;
+        player.location[2] -= 0.8;
       }
       else if(e.keyCode == 40){
         //Down
-        player.location[2] += 0.1;
+        player.location[2] += 0.8;
+      }
+      else if(e.keyCode == 81){
+        // q
+        player.location[1] -= 0.1;
       }
     }
     /************************************************************/
     /***********************  tick  *****************************/
     //player.location[2] -= 0.05;
     player.location[1] = player.location[1] + player.y_speed;
-    if(player.location[1] > 1.0)
+    if(player.location[1] > 1.0 && gravity_effect == 1)
       player.y_speed -= 0.03;
     else
       player.y_speed = 0.0;
+    // Check collision with coins
     for(var i = 0; i < coins.length; ++i){
       var player_pos_z = player.location[2] * player.scale[2];
       var coin_pos_z = (coins[i].location[2] * coins[i].scale[2]);
 
       var player_pos_x = player.location[0] * player.scale[0];
       var coin_pos_x = (coins[i].location[0] * coins[i].scale[0]);
-      if(Math.abs(coin_pos_z - player_pos_z) <= 0.05 && Math.abs(coin_pos_x - player_pos_x) <= 0.1)
+
+      var player_pos_y = player.location[1] * player.scale[1];
+      var coin_pos_y = (coins[i].location[1] * coins[i].scale[1]);
+      if(Math.abs(coin_pos_z - player_pos_z) <= 0.2 && Math.abs(coin_pos_x - player_pos_x) <= 0.2 && Math.abs(coin_pos_y - player_pos_y - 2) <= 3)
       {
         coins.splice(i, 1);
+        score += 10;
         document.getElementById('coin_sound').play();
         i = i - 1;
       }
     }
+    // Check collision with trains(TYPE1 Obstacle)
+    for(var i = 0; i < trains.length; ++i){
+      var player_pos_z = player.location[2] * player.scale[2];
+      var train_pos_z = (trains[i].location[2] * trains[i].scale[2]);
+
+      var player_pos_x = player.location[0] * player.scale[0];
+      var train_pos_x = (trains[i].location[0] * trains[i].scale[0]);
+
+      var player_pos_y = player.location[1] * player.scale[1];
+      var train_pos_y = (trains[i].location[1] * trains[i].scale[1]);
+      if(Math.abs(train_pos_z - player_pos_z) <= 7 && Math.abs(train_pos_x - player_pos_x) <= 0.1 && player_pos_y <= 7.2)
+      {
+        //trains.splice(i, 1);
+        alert("GAME OVER");
+        //i = i - 1;
+      }
+    }
+    //console.log("TRAIN: " + (trains[0].location[0] * trains[0].scale[0]) + " " + (trains[0].location[1] * trains[0].scale[1]) + " " + (trains[0].location[2] * trains[0].scale[2]));
+    //console.log("PLAYER: " + (player.location[0] * player.scale[0]) + " " + (player.location[1] * player.scale[1]) + " " + (player.location[2] * player.scale[2]));
+    //console.log("COIN: " + (coins[0].location[0] * coins[0].scale[0]) + " " + (coins[0].location[1] * coins[0].scale[1]) + " " + (coins[0].location[2] * coins[0].scale[2]));
+    // Check collision with trains
+
     /************************************************************/
     /************************** Camera **************************/
     const fieldOfView = 45 * Math.PI / 180;   // in radians
