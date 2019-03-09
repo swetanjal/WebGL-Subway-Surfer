@@ -64,8 +64,32 @@ function main() {
     },
   };
   /******************************************************************************/
+  /******************************* SHADERS FOR GRAYSCALE WORLD ****************************************/
+  const vsSourceTexturedgs = getVertexShaderTextured();
+
+  // Fragment shader program
+
+  const fsSourceTexturedgs = getFragmentShaderGrayscale();
+
+  // Initialize a shader program; this is where all the lighting
+  // for the vertices and so forth is established.
+  const shaderProgramTexturedgs = initShaderProgram(gl, vsSourceTexturedgs, fsSourceTexturedgs);
+  const programInfoTexturedgs = {
+    program: shaderProgramTexturedgs,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgramTexturedgs, 'aVertexPosition'),
+      textureCoord: gl.getAttribLocation(shaderProgramTexturedgs, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgramTexturedgs, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgramTexturedgs, 'uModelViewMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgramTexturedgs, 'uSampler'),
+    },
+  };
+  /*********************************************************************************************/
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
+  var PROGRAMINFO = programInfoTextured;
   var buffer;
   var boots = [];
   var tracks = [];
@@ -93,6 +117,7 @@ function main() {
   var jetpack_timer = -1;
   var jump_speed = 0.7;
   var jump_timer = -1;
+  var grayscale_timer = -1;
   loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
     loadJSONResource('./train.json', function(modelErr2, modelTrain){
       loadJSONResource('./player.json', function(modelErr3, modelPlayer){
@@ -243,7 +268,11 @@ function main() {
       }
       else if(e.keyCode == 81){
         // q
-        player.location[1] -= 0.1;
+        //player.location[1] -= 0.1;
+      }
+      else if(e.keyCode == 71){
+        grayscale_timer = timer;
+        PROGRAMINFO = programInfoTexturedgs;
       }
     }
     /************************************************************/
@@ -271,6 +300,12 @@ function main() {
       if((timer - jump_timer) >= 600){
         jump_timer = -1;
         jump_speed = 0.7;
+      }
+    }
+    if(grayscale_timer != -1){
+      if((timer - grayscale_timer) >= 150){
+        PROGRAMINFO = programInfoTextured;
+        grayscale_timer = -1;
       }
     }
     player.location[2] += speed;
@@ -423,21 +458,21 @@ function main() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // Drawing the tracks
     for(var i = 0; i < tracks.length; ++i){
-      drawObjectTextured(gl, programInfoTextured, tracks[i], deltaTime, viewProjectionMatrix, textureTrack);
+      drawObjectTextured(gl, PROGRAMINFO, tracks[i], deltaTime, viewProjectionMatrix, textureTrack);
     }
-    drawObjectTextured(gl, programInfoTextured, player, deltaTime, viewProjectionMatrix, texturePlayer);
-    drawObjectTextured(gl, programInfoTextured, inspector, deltaTime, viewProjectionMatrix, textureInspector);
+    drawObjectTextured(gl, PROGRAMINFO, player, deltaTime, viewProjectionMatrix, texturePlayer);
+    drawObjectTextured(gl, PROGRAMINFO, inspector, deltaTime, viewProjectionMatrix, textureInspector);
     // Drawing the trains
     for(var i = 0; i < trains.length; ++i)
-      drawObjectTextured(gl, programInfoTextured, trains[i], deltaTime, viewProjectionMatrix, textureTrain);
+      drawObjectTextured(gl, PROGRAMINFO, trains[i], deltaTime, viewProjectionMatrix, textureTrain);
     for(var i = 0; i < coins.length; ++i)
-      drawObjectTextured(gl, programInfoTextured, coins[i], deltaTime, viewProjectionMatrix, textureCoin);
+      drawObjectTextured(gl, PROGRAMINFO, coins[i], deltaTime, viewProjectionMatrix, textureCoin);
     for(var i = 0; i < barriers.length; ++i)
-      drawObjectTextured(gl, programInfoTextured, barriers[i], deltaTime, viewProjectionMatrix, textureBarrier);
+      drawObjectTextured(gl, PROGRAMINFO, barriers[i], deltaTime, viewProjectionMatrix, textureBarrier);
     for(var i = 0; i < jetpacks.length; ++i)
-      drawObjectTextured(gl, programInfoTextured, jetpacks[i], deltaTime, viewProjectionMatrix, textureJetpack);
+      drawObjectTextured(gl, PROGRAMINFO, jetpacks[i], deltaTime, viewProjectionMatrix, textureJetpack);
     for(var i = 0; i < boots.length; ++i)
-    drawObjectTextured(gl, programInfoTextured, boots[i], deltaTime, viewProjectionMatrix, textureBoot);
+    drawObjectTextured(gl, PROGRAMINFO, boots[i], deltaTime, viewProjectionMatrix, textureBoot);
     requestAnimationFrame(render);
     /*****************************************************************/
   }
