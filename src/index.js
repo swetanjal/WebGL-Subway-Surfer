@@ -67,6 +67,7 @@ function main() {
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   var buffer;
+  var boots = [];
   var tracks = [];
   var trains = [];
   var coins = [];
@@ -82,6 +83,7 @@ function main() {
   var textureCoin;
   var textureBarrier;
   var textureJetpack;
+  var textureBoot;
   var gravity_effect = 1;
   var score = 0;
   var speed = -0.0;
@@ -89,6 +91,8 @@ function main() {
   var timer = 0.0;
   var last_collision = -1;
   var jetpack_timer = -1;
+  var jump_speed = 0.7;
+  var jump_timer = -1;
   loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
     loadJSONResource('./train.json', function(modelErr2, modelTrain){
       loadJSONResource('./player.json', function(modelErr3, modelPlayer){
@@ -96,91 +100,104 @@ function main() {
           loadJSONResource('./coin.json', function(modelErr5, modelCoin){
             loadJSONResource('./roadbarrier.json', function(modelErr6, modelBarrier){
               loadJSONResource('./jetpack.json', function(modelErr7, modelJetpack){
-                textureJetpack = loadTexture(gl, 'jetpack.png');
-                textureCoin = loadTexture(gl, 'coin.png');
-                textureTrain = loadTexture(gl, 'train.png');
-                textureTrack = loadTexture(gl, 'tracks.png');
-                texturePlayer = loadTexture(gl, 'player.png');
-                textureInspector = loadTexture(gl, 'inspector.png');
-                textureBarrier = loadTexture(gl, 'roadbarrier.png');
-                /* Generating trains */
-                var L1 = 0;
-                var L0 = -23;
-                var L2 = 23;
-                trains.push(initBuffersModel(gl, 1, 1, 1, L0, 2, -450, [1.0, 1.0, 0.0, 1.0],modelTrain));
-                trains[0].rotation = 180;
-                trains[0].scale = [0.25, 0.25, 0.25];
-                /************************************************************/
-                /* Generating tracks */
-                var z = -10000;
-                var cnt = 0;
-                for(var i = 0; i < 200; ++i){
-                  tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-                  tracks[cnt].rotation = 90;
-                  tracks[cnt].scale = [0.1, 0.1, 0.1];
-                  z += 120;
-                  cnt = cnt + 1;
-                }
-                z = -10000;
-                for(var i = 0; i < 200; ++i){
-                  tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-                  tracks[cnt].rotation = 90;
-                  tracks[cnt].scale = [0.1, 0.1, 0.1];
-                  z += 120;
-                  cnt = cnt + 1;
-                }
-                z = -10000;
-                for(var i = 0; i < 200; ++i){
-                  tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-                  tracks[cnt].rotation = 90;
-                  tracks[cnt].scale = [0.1, 0.1, 0.1];
-                  z += 120;
-                  cnt = cnt + 1;
-                }
-                /****************************************************************/
-                /**************************Creating player***********************/
-                player = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 15, [0.0, 0.0, 1.0, 1.0], modelPlayer);
-                player.y_speed = 0.0;
-                player.rotation = 180.0;
-                player.scale = [0.35, 0.35, 0.35];
-                requestAnimationFrame(render);
-                /****************************************************************/
-                /***************************Creating Inspector*******************/
-                inspector = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 100, [0.0, 0.0, 1.0, 1.0], modelInspector);
-                inspector.scale = [0.4, 0.4, 0.4];
-                inspector.rotation = 180;
-                /*****************************************************************/
-                /****************** Creating Coins *********************************/
-                var lane0 = -1.15;
-                var lane1 = 0.0;
-                var lane2 = 1.15;
-                coins.push(initBuffersModel(gl, 1, 1, 1, lane1, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                coins[0].scale = [5, 5, 5];
-                coins.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                coins[1].scale = [5, 5, 5];
-                coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                coins[2].scale = [5, 5, 5];
-                coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 0.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                coins[3].scale = [5, 5, 5];
-                /******************************************************************/
-                /**************** Creating Barriers *********************************/
-                lane0 = -57;
-                lane1 = 0;
-                lane2 = 57;
-                barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -100.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                barriers[0].scale = [0.1, 0.1, 0.2];
-                barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -200.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                barriers[1].scale = [0.1, 0.1, 0.2];
-                /********************************************************************/
-                /**************** Creating jetpacks ************************************/
-                lane0 = -0.285;
-                lane1 = 0.0;
-                lane2 = 0.285;
-                jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.15, -5.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
-                jetpacks[0].scale = [20, 20, 20];
-                jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.15, -12.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
-                jetpacks[1].scale = [20, 20, 20];
-                /**********************************************************************/
+                loadJSONResource('./boots.json', function(modelErr8, modelBoot){
+                  textureBoot = loadTexture(gl, 'boots.png');
+                  textureJetpack = loadTexture(gl, 'jetpack.png');
+                  textureCoin = loadTexture(gl, 'coin.png');
+                  textureTrain = loadTexture(gl, 'train.png');
+                  textureTrack = loadTexture(gl, 'tracks.png');
+                  texturePlayer = loadTexture(gl, 'player.png');
+                  textureInspector = loadTexture(gl, 'inspector.png');
+                  textureBarrier = loadTexture(gl, 'roadbarrier.png');
+                  /* Generating trains */
+                  var L1 = 0;
+                  var L0 = -23;
+                  var L2 = 23;
+                  trains.push(initBuffersModel(gl, 1, 1, 1, L0, 2, -450, [1.0, 1.0, 0.0, 1.0],modelTrain));
+                  trains[0].rotation = 180;
+                  trains[0].scale = [0.25, 0.25, 0.25];
+                  /************************************************************/
+                  /* Generating tracks */
+                  var z = -10000;
+                  var cnt = 0;
+                  for(var i = 0; i < 200; ++i){
+                    tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+                    tracks[cnt].rotation = 90;
+                    tracks[cnt].scale = [0.1, 0.1, 0.1];
+                    z += 120;
+                    cnt = cnt + 1;
+                  }
+                  z = -10000;
+                  for(var i = 0; i < 200; ++i){
+                    tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+                    tracks[cnt].rotation = 90;
+                    tracks[cnt].scale = [0.1, 0.1, 0.1];
+                    z += 120;
+                    cnt = cnt + 1;
+                  }
+                  z = -10000;
+                  for(var i = 0; i < 200; ++i){
+                    tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+                    tracks[cnt].rotation = 90;
+                    tracks[cnt].scale = [0.1, 0.1, 0.1];
+                    z += 120;
+                    cnt = cnt + 1;
+                  }
+                  /****************************************************************/
+                  /**************************Creating player***********************/
+                  player = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 15, [0.0, 0.0, 1.0, 1.0], modelPlayer);
+                  player.y_speed = 0.0;
+                  player.rotation = 180.0;
+                  player.scale = [0.35, 0.35, 0.35];
+                  requestAnimationFrame(render);
+                  /****************************************************************/
+                  /***************************Creating Inspector*******************/
+                  inspector = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 100, [0.0, 0.0, 1.0, 1.0], modelInspector);
+                  inspector.scale = [0.4, 0.4, 0.4];
+                  inspector.rotation = 180;
+                  /*****************************************************************/
+                  /****************** Creating Coins *********************************/
+                  var lane0 = -1.15;
+                  var lane1 = 0.0;
+                  var lane2 = 1.15;
+                  coins.push(initBuffersModel(gl, 1, 1, 1, lane1, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                  coins[0].scale = [5, 5, 5];
+                  coins.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                  coins[1].scale = [5, 5, 5];
+                  coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                  coins[2].scale = [5, 5, 5];
+                  coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 0.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                  coins[3].scale = [5, 5, 5];
+                  /******************************************************************/
+                  /**************** Creating Barriers *********************************/
+                  lane0 = -57;
+                  lane1 = 0;
+                  lane2 = 57;
+                  barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -100.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                  barriers[0].scale = [0.1, 0.1, 0.2];
+                  barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -200.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                  barriers[1].scale = [0.1, 0.1, 0.2];
+                  /********************************************************************/
+                  /**************** Creating jetpacks ************************************/
+                  lane0 = -0.285;
+                  lane1 = 0.0;
+                  lane2 = 0.285;
+                  jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.15, -5.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
+                  jetpacks[0].scale = [20, 20, 20];
+                  jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.15, -12.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
+                  jetpacks[1].scale = [20, 20, 20];
+                  /**********************************************************************/
+                  /****************** Creating Jumping boots ******************************/
+                  lane0 = -23.08;
+                  lane1 = 0.0;
+                  lane2 = 23.08;
+                  boots.push(initBuffersModel(gl, 1, 1, 1, lane2, 6.0, -500.0, [0.0, 0.0, 10.0, -10.0], modelBoot));
+                  boots[0].scale = [0.25, 0.25, 0.25];
+                  boots.push(initBuffersModel(gl, 1, 1, 1, lane1, 6.0, -1000.0, [0.0, 0.0, 10.0, -10.0], modelBoot));
+                  boots[1].scale = [0.25, 0.25, 0.25];
+                  /************************************************************************/
+                })
+                
               })
             })
             
@@ -213,7 +230,7 @@ function main() {
       }
       else if(e.keyCode == 32){
         if(player.y_speed == 0 && jetpack_timer == -1){
-          player.y_speed = 0.7;
+          player.y_speed = jump_speed;
         }
       }
       else if(e.keyCode == 38){
@@ -250,8 +267,14 @@ function main() {
         gravity_effect = 1;
       }
     }
+    if(jump_timer != -1){
+      if((timer - jump_timer) >= 600){
+        jump_timer = -1;
+        jump_speed = 0.7;
+      }
+    }
     player.location[2] += speed;
-    player.location[1] = player.location[1] + player.y_speed;
+    player.location[1] = Math.max(1, player.location[1] + player.y_speed);
     if(player.location[1] > 1.0 && gravity_effect == 1)
       player.y_speed -= 0.03;
     else
@@ -306,6 +329,7 @@ function main() {
         barriers.splice(i, 1);
         last_collision = timer;
         speed /= 2;
+        i = i - 1;
       }
     }
 
@@ -323,6 +347,24 @@ function main() {
         jetpack_timer = timer;
         player.location[1] = 23;
         gravity_effect = 0;
+      }
+    }
+
+    for(var i = 0; i < boots.length; ++i){
+      var player_pos_z = player.location[2] * player.scale[2];
+      var boot_pos_z = (boots[i].location[2] * boots[i].scale[2]);
+    
+      var player_pos_x = player.location[0] * player.scale[0];
+      var boot_pos_x = (boots[i].location[0] * boots[i].scale[0]);
+
+      var player_pos_y = player.location[1] * player.scale[1];
+      var boot_pos_y = (boots[i].location[1] * boots[i].scale[1]);
+      if(Math.abs(boot_pos_z - player_pos_z) <= 0.1 && Math.abs(boot_pos_x - player_pos_x) <= 0.1 && player_pos_y <= 0.84)
+      {
+        boots.splice(i, 1);
+        jump_timer = timer;
+        i = i - 1;
+        jump_speed = 1.0;
       }
     }
     //console.log("TRAIN: " + (trains[0].location[0] * trains[0].scale[0]) + " " + (trains[0].location[1] * trains[0].scale[1]) + " " + (trains[0].location[2] * trains[0].scale[2]));
@@ -394,6 +436,8 @@ function main() {
       drawObjectTextured(gl, programInfoTextured, barriers[i], deltaTime, viewProjectionMatrix, textureBarrier);
     for(var i = 0; i < jetpacks.length; ++i)
       drawObjectTextured(gl, programInfoTextured, jetpacks[i], deltaTime, viewProjectionMatrix, textureJetpack);
+    for(var i = 0; i < boots.length; ++i)
+    drawObjectTextured(gl, programInfoTextured, boots[i], deltaTime, viewProjectionMatrix, textureBoot);
     requestAnimationFrame(render);
     /*****************************************************************/
   }
