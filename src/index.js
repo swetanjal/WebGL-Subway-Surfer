@@ -4,7 +4,7 @@ main();
 // Start here
 //
 function main() {
-  //document.getElementById('backaudio').play();
+  document.getElementById('backaudio').play();
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
@@ -140,6 +140,8 @@ function main() {
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   var PROGRAMINFO = programInfoTextured;
+  var bonus_box;
+  var dog;
   var barrels = [];
   var cones = [];
   var walls = [];
@@ -154,6 +156,8 @@ function main() {
   var then = 0;
   var textureTrain;
   var textureBarrel;
+  var textureDog;
+  var textureMystery;
   var textureTrack;
   var texturePlayer;
   var textureCone;
@@ -165,6 +169,7 @@ function main() {
   var gravity_effect = 1;
   var score = 0;
   var speed = -0.0;
+  var SPEED;
   var inspector_speed = 0.0;
   var timer = 0.0;
   var last_collision = -1;
@@ -174,6 +179,7 @@ function main() {
   var grayscale_timer = -1;
   var flash_timer = 0;
   var light = 0;
+  var coin_sound = document.getElementById('coin_sound');
   loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
     loadJSONResource('./train.json', function(modelErr2, modelTrain){
       loadJSONResource('./player.json', function(modelErr3, modelPlayer){
@@ -184,198 +190,211 @@ function main() {
                 loadJSONResource('./boots.json', function(modelErr8, modelBoot){
                   loadJSONResource('./cone.json', function(modelErr9, modelCone){
                     loadJSONResource('./barrel.json', function(modelErr10, modelBarrel){
-                      textureBarrel = loadTexture(gl, 'barrel.png');
-                      textureCone = loadTexture(gl, 'cone.png');
-                      textureWall = loadTexture(gl, 'wall.png');
-                      textureBoot = loadTexture(gl, 'boots.png');
-                      textureJetpack = loadTexture(gl, 'jetpack.png');
-                      textureCoin = loadTexture(gl, 'coin.png');
-                      textureTrain = loadTexture(gl, 'train.png');
-                      textureTrack = loadTexture(gl, 'tracks.png');
-                      texturePlayer = loadTexture(gl, 'player.png');
-                      textureInspector = loadTexture(gl, 'inspector.png');
-                      textureBarrier = loadTexture(gl, 'roadbarrier.png');
-                      /* Creating walls */
-                      for(var i = 50; i >= -200; i-=2){
-                        walls.push(initBuffersWall(gl, 1, 1, 1, -10, 2, i, [1.0, 1.0, 1.0, 1.0]));
-                        walls.push(initBuffersWall(gl, 1, 1, 1, -10, 4, i, [1.0, 1.0, 1.0, 1.0]));
-                        //walls.push(initBuffersWall(gl, 1, 1, 1, -10, 6, i, [1.0, 1.0, 1.0, 1.0]));
-                      }
-                      for(var i = 50; i >= -200; i-=2){
-                        walls.push(initBuffersWall(gl, 1, 1, 1, 10, 2, i, [1.0, 1.0, 1.0, 1.0]));
-                        walls.push(initBuffersWall(gl, 1, 1, 1, 10, 4, i, [1.0, 1.0, 1.0, 1.0]));
-                        //walls.push(initBuffersWall(gl, 1, 1, 1, 10, 6, i, [1.0, 1.0, 1.0, 1.0]));
-                      }
-                      /* Generating trains */
-                      var L1 = 0;
-                      var L0 = -23;
-                      var L2 = 23;
-                      trains.push(initBuffersModel(gl, 1, 1, 1, L0, 2, -450, [1.0, 1.0, 0.0, 1.0],modelTrain));
-                      trains[0].rotation = 180;
-                      trains[0].scale = [0.25, 0.25, 0.25];
-
-                      trains.push(initBuffersModel(gl, 1, 1, 1, L1, 2, -270 / trains[0].scale[2], [1.0, 1.0, 0.0, 1.0],modelTrain));
-                      trains[1].rotation = 180;
-                      trains[1].scale = [0.25, 0.25, 0.25];
-
-                      trains.push(initBuffersModel(gl, 1, 1, 1, L1, 2, -500 / trains[0].scale[2], [1.0, 1.0, 0.0, 1.0],modelTrain));
-                      trains[2].rotation = 180;
-                      trains[2].scale = [0.25, 0.25, 0.25];
-                      /************************************************************/
-                      /* Generating tracks */
-                      var z = -10000;
-                      var cnt = 0;
-                      for(var i = 0; i < 200; ++i){
-                        tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-                        tracks[cnt].rotation = 90;
-                        tracks[cnt].scale = [0.1, 0.1, 0.1];
-                        z += 120;
-                        cnt = cnt + 1;
-                      }
-                      z = -10000;
-                      for(var i = 0; i < 200; ++i){
-                        tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-                        tracks[cnt].rotation = 90;
-                        tracks[cnt].scale = [0.1, 0.1, 0.1];
-                        z += 120;
-                        cnt = cnt + 1;
-                      }
-                      z = -10000;
-                      for(var i = 0; i < 200; ++i){
-                        tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
-                        tracks[cnt].rotation = 90;
-                        tracks[cnt].scale = [0.1, 0.1, 0.1];
-                        z += 120;
-                        cnt = cnt + 1;
-                      }
-                      /****************************************************************/
-                      /**************************Creating player***********************/
-                      player = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 15, [0.0, 0.0, 1.0, 1.0], modelPlayer);
-                      player.y_speed = 0.0;
-                      player.rotation = 180.0;
-                      player.scale = [0.35, 0.35, 0.35];
-                      requestAnimationFrame(render);
-                      /****************************************************************/
-                      /***************************Creating Inspector*******************/
-                      inspector = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 100, [0.0, 0.0, 1.0, 1.0], modelInspector);
-                      inspector.scale = [0.4, 0.4, 0.4];
-                      inspector.rotation = 180;
-                      /*****************************************************************/
-                      /****************** Creating Coins *********************************/
-                      var lane0 = -1.15;
-                      var lane1 = 0.0;
-                      var lane2 = 1.15;
-                      coins.push(initBuffersModel(gl, 1, 1, 1, lane1, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                      coins[0].scale = [5, 5, 5];
-                      coins.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                      coins[1].scale = [5, 5, 5];
-                      coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                      coins[2].scale = [5, 5, 5];
-                      coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 0.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
-                      coins[3].scale = [5, 5, 5];
-                      for(var i = -200; i >= -310; i -= 5)
-                      {
-                        coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, i / coins[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelCoin));
-                        coins[coins.length - 1].scale = [5, 5, 5];
-                      }  
-                      for(var i = -60; i >= -100; i -= 5)
-                      {
-                        coins.push(initBuffersModel(gl, 1, 1, 1, lane1, 0.4, i / coins[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelCoin));
-                        coins[coins.length - 1].scale = [5, 5, 5];
-                      }
-                      for(var i = -157; i >= -185; i -= 3)
-                      {
-                        coins.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.4, i / coins[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelCoin));
-                        coins[coins.length - 1].scale = [5, 5, 5];
-                      }
-                      /******************************************************************/
-                      /**************** Creating Barriers *********************************/
-                      lane0 = -57;
-                      lane1 = 0;
-                      lane2 = 57;
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -100.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[0].scale = [0.1, 0.1, 0.2];
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -200.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[1].scale = [0.1, 0.1, 0.2];
-
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -125.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
-
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane0, 9, -335.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
-
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane0, 9, -385.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
-
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -390.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
-
-                      barriers.push(initBuffersModel(gl, 1, 1, 1, lane2, 9, -400.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
-                      barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
-                      /********************************************************************/
-                      /**************** Creating jetpacks ************************************/
-                      lane0 = -0.285;
-                      lane1 = 0.0;
-                      lane2 = 0.285;
-                      jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.15, -5.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
-                      jetpacks[0].scale = [20, 20, 20];
-                      jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.15, -12.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
-                      jetpacks[1].scale = [20, 20, 20];
-                      /**********************************************************************/
-                      /****************** Creating Jumping boots ******************************/
-                      lane0 = -23.08;
-                      lane1 = 0.0;
-                      lane2 = 23.08;
-                      boots.push(initBuffersModel(gl, 1, 1, 1, lane2, 6.0, -90.0 / 0.25, [0.0, 0.0, 10.0, -10.0], modelBoot));
-                      boots[0].scale = [0.25, 0.25, 0.25];
-                      boots.push(initBuffersModel(gl, 1, 1, 1, lane1, 6.0, -1000, [0.0, 0.0, 10.0, -10.0], modelBoot));
-                      boots[1].scale = [0.25, 0.25, 0.25];
-                      /************************************************************************/
-                      /****************** Creating traffic cones(BONUS TYPE2 Obstacles) *******/
-                      lane0 = -28.85;
-                      lane1 = 0.0;
-                      lane2 = 28.85;
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -100.0, [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[0].scale = [0.2, 0.2, 0.2];
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -130.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -135.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -140.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -146.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -140.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -146.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane0, 1.5, -315.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -410.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -420.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-
-                      cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -425.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
-                      cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
-                      /************************************************************************/
-                      /********************** Creating barrels (BONUS TYPE1 Obstacles) ********/
-                      lane0 = -28.85;
-                      lane1 = 0.0;
-                      lane2 = 28.85;
-                      barrels.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.0, -800.0, [0.0, 0.0, 10.0, -10.0], modelBarrel));
-                      barrels[0].scale = [0.2, 0.2, 0.2];
-                      barrels.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.0, -380.0 / barrels[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelBarrel));
-                      barrels[1].scale = [0.2, 0.2, 0.2];
-                      /************************************************************************/
+                      loadJSONResource('./mystery.json', function(modelErr11, modelMystery){
+                        loadJSONResource('./dog.json', function(modelErr12, modelDog){
+                          textureDog = loadTexture(gl, 'dog.png');
+                          textureMystery = loadTexture(gl, 'mystery.png');
+                          textureBarrel = loadTexture(gl, 'barrel.png');
+                          textureCone = loadTexture(gl, 'cone.png');
+                          textureWall = loadTexture(gl, 'wall.png');
+                          textureBoot = loadTexture(gl, 'boots.png');
+                          textureJetpack = loadTexture(gl, 'jetpack.png');
+                          textureCoin = loadTexture(gl, 'coin.png');
+                          textureTrain = loadTexture(gl, 'train.png');
+                          textureTrack = loadTexture(gl, 'tracks.png');
+                          texturePlayer = loadTexture(gl, 'player.png');
+                          textureInspector = loadTexture(gl, 'inspector.png');
+                          textureBarrier = loadTexture(gl, 'roadbarrier.png');
+                          /* Creating walls */
+                          for(var i = 55; i >= -200; i-=2){
+                            walls.push(initBuffersWall(gl, 1, 1, 1, -10, 2, i, [1.0, 1.0, 1.0, 1.0]));
+                            walls.push(initBuffersWall(gl, 1, 1, 1, -10, 4, i, [1.0, 1.0, 1.0, 1.0]));
+                            //walls.push(initBuffersWall(gl, 1, 1, 1, -10, 6, i, [1.0, 1.0, 1.0, 1.0]));
+                          }
+                          for(var i = 55; i >= -200; i-=2){
+                            walls.push(initBuffersWall(gl, 1, 1, 1, 10, 2, i, [1.0, 1.0, 1.0, 1.0]));
+                            walls.push(initBuffersWall(gl, 1, 1, 1, 10, 4, i, [1.0, 1.0, 1.0, 1.0]));
+                            //walls.push(initBuffersWall(gl, 1, 1, 1, 10, 6, i, [1.0, 1.0, 1.0, 1.0]));
+                          }
+                          /* Generating trains */
+                          var L1 = 0;
+                          var L0 = -23;
+                          var L2 = 23;
+                          trains.push(initBuffersModel(gl, 1, 1, 1, L0, 2, -450, [1.0, 1.0, 0.0, 1.0],modelTrain));
+                          trains[0].rotation = 180;
+                          trains[0].scale = [0.25, 0.25, 0.25];
+    
+                          trains.push(initBuffersModel(gl, 1, 1, 1, L1, 2, -270 / trains[0].scale[2], [1.0, 1.0, 0.0, 1.0],modelTrain));
+                          trains[1].rotation = 180;
+                          trains[1].scale = [0.25, 0.25, 0.25];
+    
+                          trains.push(initBuffersModel(gl, 1, 1, 1, L1, 2, -500 / trains[0].scale[2], [1.0, 1.0, 0.0, 1.0],modelTrain));
+                          trains[2].rotation = 180;
+                          trains[2].scale = [0.25, 0.25, 0.25];
+                          /************************************************************/
+                          /* Generating tracks */
+                          var z = -10000;
+                          var cnt = 0;
+                          for(var i = 0; i < 200; ++i){
+                            tracks.push(initBuffersModel(gl, 0, 0, 0, 0, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+                            tracks[cnt].rotation = 90;
+                            tracks[cnt].scale = [0.1, 0.1, 0.1];
+                            z += 120;
+                            cnt = cnt + 1;
+                          }
+                          z = -10000;
+                          for(var i = 0; i < 200; ++i){
+                            tracks.push(initBuffersModel(gl, 0, 0, 0, 58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+                            tracks[cnt].rotation = 90;
+                            tracks[cnt].scale = [0.1, 0.1, 0.1];
+                            z += 120;
+                            cnt = cnt + 1;
+                          }
+                          z = -10000;
+                          for(var i = 0; i < 200; ++i){
+                            tracks.push(initBuffersModel(gl, 0, 0, 0, -58, -50, z, [1.0, 1.0, 0.0, 1.0], modelTrack));
+                            tracks[cnt].rotation = 90;
+                            tracks[cnt].scale = [0.1, 0.1, 0.1];
+                            z += 120;
+                            cnt = cnt + 1;
+                          }
+                          /****************************************************************/
+                          /**************************Creating player***********************/
+                          player = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 15, [0.0, 0.0, 1.0, 1.0], modelPlayer);
+                          player.y_speed = 0.0;
+                          player.rotation = 180.0;
+                          player.scale = [0.35, 0.35, 0.35];
+                          requestAnimationFrame(render);
+                          /****************************************************************/
+                          /***************************Creating Inspector*******************/
+                          inspector = initBuffersModel(gl, 1, 1, 1, 0, 1.0, 125, [0.0, 0.0, 1.0, 1.0], modelInspector);
+                          inspector.scale = [0.4, 0.4, 0.4];
+                          inspector.rotation = 180;
+                          /*****************************************************************/
+                          /****************** Creating Coins *********************************/
+                          var lane0 = -1.15;
+                          var lane1 = 0.0;
+                          var lane2 = 1.15;
+                          coins.push(initBuffersModel(gl, 1, 1, 1, lane1, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                          coins[0].scale = [5, 5, 5];
+                          coins.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                          coins[1].scale = [5, 5, 5];
+                          coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 1.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                          coins[2].scale = [5, 5, 5];
+                          coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, 0.0, [0.0, 0.0, 10.0, 1.0], modelCoin));
+                          coins[3].scale = [5, 5, 5];
+                          for(var i = -200; i >= -310; i -= 5)
+                          {
+                            coins.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.4, i / coins[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelCoin));
+                            coins[coins.length - 1].scale = [5, 5, 5];
+                          }  
+                          for(var i = -60; i >= -100; i -= 5)
+                          {
+                            coins.push(initBuffersModel(gl, 1, 1, 1, lane1, 0.4, i / coins[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelCoin));
+                            coins[coins.length - 1].scale = [5, 5, 5];
+                          }
+                          for(var i = -157; i >= -185; i -= 3)
+                          {
+                            coins.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.4, i / coins[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelCoin));
+                            coins[coins.length - 1].scale = [5, 5, 5];
+                          }
+                          /******************************************************************/
+                          /**************** Creating Barriers *********************************/
+                          lane0 = -57;
+                          lane1 = 0;
+                          lane2 = 57;
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -100.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[0].scale = [0.1, 0.1, 0.2];
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -200.0, [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[1].scale = [0.1, 0.1, 0.2];
+    
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -125.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
+    
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane0, 9, -335.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
+    
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane0, 9, -385.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
+    
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane1, 9, -390.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
+    
+                          barriers.push(initBuffersModel(gl, 1, 1, 1, lane2, 9, -400.0 / barriers[0].scale[2], [0.0, 0.0, 10.0, 1.0], modelBarrier));
+                          barriers[barriers.length - 1].scale = [0.1, 0.1, 0.2];
+                          /********************************************************************/
+                          /**************** Creating jetpacks ************************************/
+                          lane0 = -0.285;
+                          lane1 = 0.0;
+                          lane2 = 0.285;
+                          jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.15, -5.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
+                          jetpacks[0].scale = [20, 20, 20];
+                          jetpacks.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.15, -12.0, [0.0, 0.0, 10.0, 1.0], modelJetpack));
+                          jetpacks[1].scale = [20, 20, 20];
+                          /**********************************************************************/
+                          /****************** Creating Jumping boots ******************************/
+                          lane0 = -23.08;
+                          lane1 = 0.0;
+                          lane2 = 23.08;
+                          boots.push(initBuffersModel(gl, 1, 1, 1, lane2, 6.0, -90.0 / 0.25, [0.0, 0.0, 10.0, -10.0], modelBoot));
+                          boots[0].scale = [0.25, 0.25, 0.25];
+                          boots.push(initBuffersModel(gl, 1, 1, 1, lane1, 6.0, -1000, [0.0, 0.0, 10.0, -10.0], modelBoot));
+                          boots[1].scale = [0.25, 0.25, 0.25];
+                          /************************************************************************/
+                          /****************** Creating traffic cones(BONUS TYPE2 Obstacles) *******/
+                          lane0 = -28.85;
+                          lane1 = 0.0;
+                          lane2 = 28.85;
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -100.0, [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[0].scale = [0.2, 0.2, 0.2];
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -130.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -135.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -140.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -146.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -140.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -146.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane0, 1.5, -315.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane1, 1.5, -410.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -420.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+    
+                          cones.push(initBuffersModel(gl, 1, 1, 1, lane2, 1.5, -425.0 / cones[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelCone));
+                          cones[cones.length - 1].scale = [0.2, 0.2, 0.2];
+                          /************************************************************************/
+                          /********************** Creating barrels (BONUS TYPE1 Obstacles) ********/
+                          lane0 = -28.85;
+                          lane1 = 0.0;
+                          lane2 = 28.85;
+                          barrels.push(initBuffersModel(gl, 1, 1, 1, lane0, 0.0, -800.0, [0.0, 0.0, 10.0, -10.0], modelBarrel));
+                          barrels[0].scale = [0.2, 0.2, 0.2];
+                          barrels.push(initBuffersModel(gl, 1, 1, 1, lane2, 0.0, -380.0 / barrels[0].scale[2], [0.0, 0.0, 10.0, -10.0], modelBarrel));
+                          barrels[1].scale = [0.2, 0.2, 0.2];
+                          /************************************************************************/
+                          // Creating bonus box
+                          bonus_box = initBuffersModel(gl, 1, 1, 1, 0.0, 0.4, -440 * 1.0/ 8, [0.0, 0.0, 10.0, -10.0], modelMystery);
+                          bonus_box.scale = [8, 8, 8];
+                          // Creating dog
+                          dog = initBuffersModel(gl, 1, 1, 1, 0.0, 0.0, 0.0, [0.0, 0.0, 10.0, -10.0], modelDog);
+                          dog.rotation = 180;
+                          dog.scale = [0.5, 0.5, 0.5];
+                        })
+                      })
                     })
                   })
                   
@@ -400,6 +419,7 @@ function main() {
       e = e || window.event;
       if(speed == 0 && e.keyCode){
         speed = -0.5 * 1.2;
+        SPEED = speed;
         inspector_speed = -0.5;
       }
       if(e.keyCode == 37){
@@ -435,8 +455,11 @@ function main() {
     }
     /************************************************************/
     /***********************  tick  *****************************/
-    if((player.location[2] * player.scale[2]) <= -440){
+    dog.location[2] = ((player.location[2] * player.scale[2]) + 7) / dog.scale[2];
+    dog.location[0] = ((player.location[0] * player.scale[0])) / dog.scale[0];
+    if((player.location[2] * player.scale[2]) <= -450){
       alert("Well done! You are safe from the inspector!");
+      location.reload();
     }
     if(Math.abs((player.location[2] * player.scale[2]) - (trains[2].location[2] * trains[2].scale[2])) <= 215)
     {
@@ -449,6 +472,7 @@ function main() {
     //player.location[2] -= 0.05;
     if((inspector.location[2] * inspector.scale[2]) <= (player.location[2] * player.scale[2])){
       alert("GAME OVER! YOU HAVE BEEN CAUGHT BY INSPECTOR!");
+      location.reload();
     }
     inspector.location[2] += inspector_speed;
     if(last_collision!=-1){
@@ -456,6 +480,8 @@ function main() {
         //alert("DONE!");
         last_collision = -1;
         speed *= 2;
+        if(speed == SPEED)
+          inspector.location[2] = ((player.location[2] * player.scale[2]) + 45) * 1.0/ inspector.scale[2];
       }
     }
     if(jetpack_timer != -1){
@@ -509,9 +535,17 @@ function main() {
       {
         coins.splice(i, 1);
         score += 10;
-        document.getElementById('coin_sound').play();
+        var tmp = coin_sound.cloneNode();
+        tmp.play();
         i = i - 1;
       }
+    }
+    if(Math.abs(bonus_box.location[2]*bonus_box.scale[2] - player.location[2] * player.scale[2]) <= 0.1 && (player.location[1] * player.scale[1]) <= 0.35
+    && Math.abs(bonus_box.location[0]*bonus_box.scale[0] - player.location[0] * player.scale[0]) <= 0.1){
+      player.rotation = 0;
+      dog.rotation = 0;
+      //dog.location[2] = ((player.location[2] * player.scale[2]) + 5) / dog.scale[2];
+      //alert("HI");
     }
     // Check collision with trains(TYPE1 Obstacle)
     for(var i = 0; i < trains.length; ++i){
@@ -527,6 +561,7 @@ function main() {
       {
         //trains.splice(i, 1);
         alert("GAME OVER! YOU WERE HIT BY A TRAIN!");
+        location.reload();
         //i = i - 1;
       }
     }
@@ -544,6 +579,7 @@ function main() {
       {
         //trains.splice(i, 1);
         alert("GAME OVER! YOU WERE HIT BY A BARREL!");
+        location.reload();
         //i = i - 1;
       }
     }
@@ -620,7 +656,7 @@ function main() {
       }
     }
     //console.log("TRAIN: " + (trains[0].location[0] * trains[0].scale[0]) + " " + (trains[0].location[1] * trains[0].scale[1]) + " " + (trains[0].location[2] * trains[0].scale[2]));
-    console.log("PLAYER: " + (player.location[0] * player.scale[0]) + " " + (player.location[1] * player.scale[1]) + " " + (player.location[2] * player.scale[2]));
+    //console.log("PLAYER: " + (player.location[0] * player.scale[0]) + " " + (player.location[1] * player.scale[1]) + " " + (player.location[2] * player.scale[2]));
     //console.log("COIN: " + (barriers[0].location[0] * barriers[0].scale[0]) + " " + (barriers[0].location[1] * barriers[0].scale[1]) + " " + (barriers[0].location[2] * barriers[0].scale[2]));
     timer++;
     /************************************************************/
@@ -637,12 +673,12 @@ function main() {
       up = [0, 1, 0];
     }
     else if(speed != 0){
-      eye = [0, 11.5, (player.location[2] * player.scale[2]) + 20];
+      eye = [0, 11.5, (player.location[2] * player.scale[2]) + 25];
       look = [0, 8, player.location[2] * player.scale[2]];
       up = [0, 1, 0];
     }
     else{
-      eye = [0, 8.5, 54];
+      eye = [0, 8.5, 68];
       look = [0, 0, player.location[2] * player.scale[2]];
       up = [0, 1, 0];
     }
@@ -677,6 +713,7 @@ function main() {
     for(var i = 0; i < tracks.length; ++i){
       drawObjectTextured(gl, PROGRAMINFO, tracks[i], deltaTime, viewProjectionMatrix, textureTrack);
     }
+    drawObjectTextured(gl, PROGRAMINFO, dog, deltaTime, viewProjectionMatrix, textureDog);
     drawObjectTextured(gl, PROGRAMINFO, player, deltaTime, viewProjectionMatrix, texturePlayer);
     drawObjectTextured(gl, PROGRAMINFO, inspector, deltaTime, viewProjectionMatrix, textureInspector);
     // Drawing the trains
@@ -690,6 +727,8 @@ function main() {
       drawObjectTextured(gl, PROGRAMINFO, jetpacks[i], deltaTime, viewProjectionMatrix, textureJetpack);
     for(var i = 0; i < boots.length; ++i)
       drawObjectTextured(gl, PROGRAMINFO, boots[i], deltaTime, viewProjectionMatrix, textureBoot);
+    
+    drawObjectTexturedMystery(gl, PROGRAMINFO, bonus_box, deltaTime, viewProjectionMatrix, textureMystery);
     for(var i = 0; i < cones.length; ++i)
       drawObjectTexturedCone(gl, PROGRAMINFO, cones[i], deltaTime, viewProjectionMatrix, textureCone);
     for(var i = 0; i < barrels.length; ++i)
