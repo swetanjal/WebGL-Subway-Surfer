@@ -4,7 +4,7 @@ main();
 // Start here
 //
 function main() {
-  //document.getElementById('backaudio').play();
+  document.getElementById('backaudio').play();
   const canvas = document.querySelector('#glcanvas');
   const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
@@ -87,10 +87,35 @@ function main() {
     },
   };
   /*********************************************************************************************/
+  /******************************** SHADER FOR LIGHTING WALL ***********************************/
+  const vsSourceWall = getVertexShaderWall();
+
+  // Fragment shader program
+
+  const fsSourceWall = getFragmentShaderWall();
+
+  // Initialize a shader program; this is where all the lighting
+  // for the vertices and so forth is established.
+  const shaderProgramWall = initShaderProgram(gl, vsSourceWall, fsSourceWall);
+  const programInfoWall = {
+    program: shaderProgramWall,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgramWall, 'aVertexPosition'),
+      vertexNormal: gl.getAttribLocation(shaderProgramWall, 'aVertexNormal'),
+      textureCoord: gl.getAttribLocation(shaderProgramWall, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgramWall, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgramWall, 'uModelViewMatrix'),
+      normalMatrix: gl.getUniformLocation(shaderProgramWall, 'uNormalMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgramWall, 'uSampler'),
+    },
+  };
+  /**********************************************************************************************/
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   var PROGRAMINFO = programInfoTextured;
-  var buffer;
+  var walls = [];
   var boots = [];
   var tracks = [];
   var trains = [];
@@ -118,6 +143,8 @@ function main() {
   var jump_speed = 0.7;
   var jump_timer = -1;
   var grayscale_timer = -1;
+  var flash_timer = 0;
+  var light = 0;
   loadJSONResource('./tracks.json', function (modelErr, modelTrack) {
     loadJSONResource('./train.json', function(modelErr2, modelTrain){
       loadJSONResource('./player.json', function(modelErr3, modelPlayer){
@@ -126,6 +153,7 @@ function main() {
             loadJSONResource('./roadbarrier.json', function(modelErr6, modelBarrier){
               loadJSONResource('./jetpack.json', function(modelErr7, modelJetpack){
                 loadJSONResource('./boots.json', function(modelErr8, modelBoot){
+                  textureWall = loadTexture(gl, 'wall.png');
                   textureBoot = loadTexture(gl, 'boots.png');
                   textureJetpack = loadTexture(gl, 'jetpack.png');
                   textureCoin = loadTexture(gl, 'coin.png');
@@ -134,6 +162,17 @@ function main() {
                   texturePlayer = loadTexture(gl, 'player.png');
                   textureInspector = loadTexture(gl, 'inspector.png');
                   textureBarrier = loadTexture(gl, 'roadbarrier.png');
+                  /* Creating walls */
+                  for(var i = 50; i >= -200; i-=2){
+                    walls.push(initBuffersWall(gl, 1, 1, 1, -10, 2, i, [1.0, 1.0, 1.0, 1.0]));
+                    walls.push(initBuffersWall(gl, 1, 1, 1, -10, 4, i, [1.0, 1.0, 1.0, 1.0]));
+                    //walls.push(initBuffersWall(gl, 1, 1, 1, -10, 6, i, [1.0, 1.0, 1.0, 1.0]));
+                  }
+                  for(var i = 50; i >= -200; i-=2){
+                    walls.push(initBuffersWall(gl, 1, 1, 1, 10, 2, i, [1.0, 1.0, 1.0, 1.0]));
+                    walls.push(initBuffersWall(gl, 1, 1, 1, 10, 4, i, [1.0, 1.0, 1.0, 1.0]));
+                    //walls.push(initBuffersWall(gl, 1, 1, 1, 10, 6, i, [1.0, 1.0, 1.0, 1.0]));
+                  }
                   /* Generating trains */
                   var L1 = 0;
                   var L0 = -23;
@@ -277,6 +316,10 @@ function main() {
     }
     /************************************************************/
     /***********************  tick  *****************************/
+    if((timer - flash_timer) > 75){
+      flash_timer = timer;
+      light = 1 - light;
+    }
     //player.location[2] -= 0.05;
     if((inspector.location[2] * inspector.scale[2]) <= (player.location[2] * player.scale[2])){
       alert("GAME OVER! YOU HAVE BEEN CAUGHT BY INSPECTOR!");
@@ -306,6 +349,18 @@ function main() {
       if((timer - grayscale_timer) >= 150){
         PROGRAMINFO = programInfoTextured;
         grayscale_timer = -1;
+      }
+    }
+    if(speed != 0){
+      for(var i = 0; i < walls.length; ++i){
+        //if((player.location[2] * player.scale[2]) + 30 < walls[i].location[2])
+        //{
+          //walls.push(initBuffersWall(gl, 1, 1, 1, walls[i].location[0], walls[i].location[1], walls[walls.length - 1].location[2] - 2, [1.0, 1.0, 1.0, 1.0]));
+          //walls.splice(i, 1);
+          //i = i - 1;
+          walls[i].location[2] += (speed * player.scale[2]);
+          
+        //}
       }
     }
     player.location[2] += speed;
@@ -473,6 +528,12 @@ function main() {
       drawObjectTextured(gl, PROGRAMINFO, jetpacks[i], deltaTime, viewProjectionMatrix, textureJetpack);
     for(var i = 0; i < boots.length; ++i)
     drawObjectTextured(gl, PROGRAMINFO, boots[i], deltaTime, viewProjectionMatrix, textureBoot);
+    for(var i = 0; i < walls.length; ++i){
+      if(light)
+        drawObjectWall(gl, programInfoWall, walls[i], deltaTime, viewProjectionMatrix, textureWall);
+      else
+        drawObjectWall(gl, programInfoTextured, walls[i], deltaTime, viewProjectionMatrix, textureWall);
+    }
     requestAnimationFrame(render);
     /*****************************************************************/
   }
