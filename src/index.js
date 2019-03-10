@@ -741,6 +741,7 @@ function main() {
       else
         drawObjectWall(gl, PROGRAMINFO, walls[i], deltaTime, viewProjectionMatrix, textureWall);
     }
+    document.title = "Score: " + score;
     requestAnimationFrame(render);
     /*****************************************************************/
   }
