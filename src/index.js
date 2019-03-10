@@ -112,6 +112,31 @@ function main() {
     },
   };
   /**********************************************************************************************/
+  /************************** Gray scale shader for lighting wall ********************************/
+  const vsSourceWallgs = getVertexShaderWall();
+
+  // Fragment shader program
+
+  const fsSourceWallgs = getFragmentShaderWallgs();
+
+  // Initialize a shader program; this is where all the lighting
+  // for the vertices and so forth is established.
+  const shaderProgramWallgs = initShaderProgram(gl, vsSourceWallgs, fsSourceWallgs);
+  const programInfoWallgs = {
+    program: shaderProgramWallgs,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(shaderProgramWallgs, 'aVertexPosition'),
+      vertexNormal: gl.getAttribLocation(shaderProgramWallgs, 'aVertexNormal'),
+      textureCoord: gl.getAttribLocation(shaderProgramWallgs, 'aTextureCoord'),
+    },
+    uniformLocations: {
+      projectionMatrix: gl.getUniformLocation(shaderProgramWallgs, 'uProjectionMatrix'),
+      modelViewMatrix: gl.getUniformLocation(shaderProgramWallgs, 'uModelViewMatrix'),
+      normalMatrix: gl.getUniformLocation(shaderProgramWallgs, 'uNormalMatrix'),
+      uSampler: gl.getUniformLocation(shaderProgramWallgs, 'uSampler'),
+    },
+  };
+  /**********************************************************************************************/
   // Here's where we call the routine that builds all the
   // objects we'll be drawing.
   var PROGRAMINFO = programInfoTextured;
@@ -346,7 +371,7 @@ function main() {
       }
     }
     if(grayscale_timer != -1){
-      if((timer - grayscale_timer) >= 150){
+      if((timer - grayscale_timer) >= 300){
         PROGRAMINFO = programInfoTextured;
         grayscale_timer = -1;
       }
@@ -529,10 +554,12 @@ function main() {
     for(var i = 0; i < boots.length; ++i)
     drawObjectTextured(gl, PROGRAMINFO, boots[i], deltaTime, viewProjectionMatrix, textureBoot);
     for(var i = 0; i < walls.length; ++i){
-      if(light)
+      if(light && grayscale_timer == -1)
         drawObjectWall(gl, programInfoWall, walls[i], deltaTime, viewProjectionMatrix, textureWall);
+      else if(light)
+      drawObjectWall(gl, programInfoWallgs, walls[i], deltaTime, viewProjectionMatrix, textureWall);
       else
-        drawObjectWall(gl, programInfoTextured, walls[i], deltaTime, viewProjectionMatrix, textureWall);
+        drawObjectWall(gl, PROGRAMINFO, walls[i], deltaTime, viewProjectionMatrix, textureWall);
     }
     requestAnimationFrame(render);
     /*****************************************************************/
